@@ -1,2 +1,2 @@
 # anime-girls-generation
-Learning diffusion models by anime girls generation
+Learning diffusion models through anime girls generation
