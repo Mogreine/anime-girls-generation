@@ -2,21 +2,24 @@ data:
   image_folder: "data/anime-faces"
   interpolation: "bicubic"
   image_size: 64
+  n_workers: 2
 
 opt:
-  gpus: 1
-  batch_size: 128
-  n_epochs: 1
-  val_interval: 0.5
+  gpus: 8
+  batch_size: 64
+  n_epochs: 50
+  val_interval: 1.0
   accumulate_grad_batches: 1
-  n_warmup_steps: 0.1
+  n_warmup_steps: 500
 
   lr: 0.0002
-  w_decay: 0.01
+  w_decay: 0.0
   scheduler: cosine
 
-  n_diffusion_steps: 100
-  noise_range: [0.0001, 0.04]
+  n_diffusion_steps: 1000
+  noise_range: [0.0001, 0.02]
+
+  log_samples_every_epochs: 10
 
 seed: 57
-offline_logging: True
+offline_logging: False

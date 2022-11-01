@@ -3,6 +3,7 @@ import os.path
 import torch
 import numpy as np
 import pytorch_lightning as pl
+import wandb
 
 from transformers import get_cosine_schedule_with_warmup
 from PIL import Image
@@ -89,7 +90,8 @@ class BaseDiffusion(pl.LightningModule):
         loss = np.mean([l["loss"] for l in validation_step_outputs])
         self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
 
-        self._log_samples()
+        if int(os.environ["LOCAL_RANK"]) == 0 and (self.current_epoch + 1) % self.cfg.opt.log_samples_every_epochs == 0:
+            self._log_samples()
 
     def _log_samples(self):
         samples = ddpm(
@@ -106,6 +108,7 @@ class BaseDiffusion(pl.LightningModule):
             image.paste(sample, (i * self.cfg.data.image_size, 0))
 
         image.save(os.path.join(ROOT_DIR, "data/results/samples.png"))
+        self.logger.log_image(key="samples", images=[image])
 
     def configure_optimizers(self):
         print(f"Training steps: {self.num_training_steps}")

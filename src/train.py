@@ -38,7 +38,7 @@ def train(cfg: TrainConfig):
 
     trainer = pl.Trainer(
         strategy="ddp",
-        precision=32,
+        precision=16,
         val_check_interval=cfg.opt.val_interval,
         accumulate_grad_batches=cfg.opt.accumulate_grad_batches,
         gpus=cfg.opt.gpus,

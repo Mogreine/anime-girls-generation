@@ -50,6 +50,9 @@ class OptConfig:
     # Noise min and max
     noise_range: List[float] = field(default_factory=lambda: [0.1, 0.1])
 
+    # Samples logging interval
+    log_samples_every_epochs: int = field(default=10)
+
     def __post_init__(self):
         if self.checkpoint_path is not None:
             self.checkpoint_path = os.path.join(ROOT_DIR, self.checkpoint_path)
