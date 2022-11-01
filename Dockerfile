@@ -8,6 +8,8 @@ COPY requirements.txt requirements.txt
 RUN conda init bash
 
 # Install other requirements
+RUN apt-get update
+RUN apt-get install ffmpeg libsm6 libxext6  -y
 RUN pip install -r requirements.txt
 RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113 --upgrade
 
