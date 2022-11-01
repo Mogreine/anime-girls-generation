@@ -52,6 +52,8 @@ class OptConfig:
 
     # Samples logging interval
     log_samples_every_epochs: int = field(default=10)
+    # Number of samples to log
+    n_samples_to_log: int = field(default=8)
 
     def __post_init__(self):
         if self.checkpoint_path is not None:

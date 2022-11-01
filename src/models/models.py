@@ -97,7 +97,7 @@ class BaseDiffusion(pl.LightningModule):
         samples = ddpm(
             self.encoder,
             im_size=self.cfg.data.image_size,
-            n_samples=4,
+            n_samples=self.cfg.opt.n_samples_to_log,
             n_diffusion_steps=self.cfg.opt.n_diffusion_steps,
             noise_range=self.cfg.opt.noise_range,
             use_gpu=self.cfg.opt.gpus != 0,

@@ -20,6 +20,7 @@ opt:
   noise_range: [0.0001, 0.02]
 
   log_samples_every_epochs: 10
+  n_samples_to_log: 8
 
 seed: 57
 offline_logging: False
