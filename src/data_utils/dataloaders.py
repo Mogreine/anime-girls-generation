@@ -19,6 +19,7 @@ class AnimeFacesDataset(Dataset):
         self.transforms = transforms.Compose([
             transforms.Resize((cfg.data.image_size, cfg.data.image_size)),
             transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
 
     def __len__(self):

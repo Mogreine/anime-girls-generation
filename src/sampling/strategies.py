@@ -15,6 +15,7 @@ def ddpm(
     n_diffusion_steps: int = 1000,
     noise_range: Tuple[float] = (0.0001, 0.04),
     use_gpu: bool = False,
+    seed: int = 57,
 ) -> List[PIL.Image.Image]:
     def p_xt(xt, noise, t):
         alpha_t = alpha[t].reshape(-1, 1, 1, 1)
@@ -26,6 +27,7 @@ def ddpm(
         return mean + (var ** 0.5) * eps
 
     device = torch.device("cuda") if use_gpu else torch.device("cpu")
+    torch.manual_seed(seed)
 
     x = torch.randn(n_samples, 3, im_size, im_size).to(device)
     beta = torch.linspace(*noise_range, n_diffusion_steps).to(device)

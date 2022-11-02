@@ -28,4 +28,4 @@ def img_to_tensor(im):
 
 
 def tensor_to_image(t):
-    return Image.fromarray(np.array(((t.squeeze().permute(1, 2, 0) + 1) / 2).clip(0, 1) * 255).astype(np.uint8))
+    return Image.fromarray(np.array(((t.squeeze().permute(1, 2, 0) + 1) * 127.5).clip(0, 255)).astype(np.uint8))
