@@ -103,9 +103,9 @@ class BaseDiffusion(pl.LightningModule):
             use_gpu=self.cfg.opt.gpus != 0,
         )
 
-        image = Image.new("RGB", size=(self.cfg.data.image_size * len(samples), self.cfg.data.image_size))
+        image = Image.new("RGB", size=(self.cfg.data.image_size * 4, self.cfg.data.image_size * 4))
         for i, sample in enumerate(samples):
-            image.paste(sample, (i * self.cfg.data.image_size, 0))
+            image.paste(sample, ((i % 4) * self.cfg.data.image_size, self.cfg.data.image_size * (i // 4)))
 
         image.save(os.path.join(ROOT_DIR, "data/results/samples.png"))
         self.logger.log_image(key="samples", images=[image])
