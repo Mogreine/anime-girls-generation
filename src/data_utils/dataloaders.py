@@ -44,8 +44,8 @@ class BaseDataModule(pl.LightningDataModule):
         img_files = os.listdir(self.cfg.data.image_folder)
         np.random.shuffle(img_files)
 
-        self.train_ds = AnimeFacesDataset(self.cfg, img_files[:int(len(img_files) * 0.8)])
-        self.val_ds = AnimeFacesDataset(self.cfg, img_files[int(len(img_files) * 0.8):])
+        self.train_ds = AnimeFacesDataset(self.cfg, img_files[:int(len(img_files) * 0.95)])
+        self.val_ds = AnimeFacesDataset(self.cfg, img_files[int(len(img_files) * 0.95):])
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(

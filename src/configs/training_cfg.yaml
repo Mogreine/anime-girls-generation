@@ -5,12 +5,12 @@ data:
   n_workers: 2
 
 opt:
-  gpus: [1]
-  batch_size: 64
-  n_epochs: 50
+  gpus: [3]
+  batch_size: 128
+  n_epochs: 500
   val_interval: 1.0
   accumulate_grad_batches: 1
-  n_warmup_steps: 500
+  n_warmup_epochs: 5
 
   lr: 0.0002
   w_decay: 0.0
@@ -19,7 +19,7 @@ opt:
   n_diffusion_steps: 1000
   noise_range: [0.0001, 0.02]
 
-  log_samples_every_epochs: 5
+  log_samples_every_epochs: 20
   n_samples_to_log: 16
 
 seed: 57

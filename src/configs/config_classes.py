@@ -34,7 +34,7 @@ class OptConfig:
     checkpoint_path: str = field(default=None)
 
     # Number of warmup steps for training. Maybe either int or float
-    n_warmup_steps: Union[int, float] = field(default=10_000)
+    n_warmup_epochs: Union[int, float] = field(default=1)
     # Learning rate for AdamW optimizer
     lr: float = field(default=2e-4)
     # Weight decay for AdamW optimizer

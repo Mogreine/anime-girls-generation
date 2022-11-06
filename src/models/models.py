@@ -3,15 +3,14 @@ import os.path
 import torch
 import numpy as np
 import pytorch_lightning as pl
-import wandb
 
+from diffusers import UNet2DModel, DDPMScheduler, DDPMPipeline
+from loguru import logger
 from transformers import get_cosine_schedule_with_warmup
 from PIL import Image
 
 from definitions import ROOT_DIR
 from src.configs.config_classes import TrainConfig
-from src.models.encoders import UNet
-from src.sampling.strategies import ddpm
 
 
 class BaseDiffusion(pl.LightningModule):
@@ -19,15 +18,40 @@ class BaseDiffusion(pl.LightningModule):
         super().__init__()
 
         self.cfg = cfg
-        self.encoder = UNet()
+
+        self.encoder = UNet2DModel(
+            sample_size=self.cfg.data.image_size,  # the target image resolution
+            in_channels=3,  # the number of input channels, 3 for RGB images
+            out_channels=3,  # the number of output channels
+            layers_per_block=2,  # how many ResNet layers to use per UNet block
+            block_out_channels=(
+                64,
+                128,
+                256,
+                512,
+                1024,
+            ),  # the number of output channels for each UNet block
+            down_block_types=(
+                "DownBlock2D",
+                "DownBlock2D",
+                "DownBlock2D",
+                "AttnDownBlock2D",
+                "AttnDownBlock2D",
+            ),
+            up_block_types=(
+                "AttnUpBlock2D",
+                "AttnUpBlock2D",
+                "UpBlock2D",
+                "UpBlock2D",
+                "UpBlock2D",
+            ),
+        )
+        self.noise_scheduler = DDPMScheduler(num_train_timesteps=self.cfg.opt.n_diffusion_steps)
 
         self.lr = cfg.opt.lr
         self.w_decay = cfg.opt.w_decay
         self.scheduler = cfg.opt.scheduler
-        self.warmup_steps = cfg.opt.n_warmup_steps
-
-        alpha = 1 - torch.linspace(*self.cfg.opt.noise_range, self.cfg.opt.n_diffusion_steps)
-        self.register_buffer("alpha_bar", torch.cumprod(alpha, dim=0))
+        self.warmup_epochs = cfg.opt.n_warmup_epochs
 
         self.save_hyperparameters()
 
@@ -50,18 +74,17 @@ class BaseDiffusion(pl.LightningModule):
 
         return total_steps
 
-    def q_x0_xt(self, x0, t):
-        mean = (self.alpha_bar[t] ** 0.5).reshape(-1, 1, 1, 1) * x0
-        var = ((1 - self.alpha_bar[t]) ** 0.5).reshape(-1, 1, 1, 1)
-        eps = torch.randn_like(x0)
-        return mean + var * eps, eps
+    def q_x0_xt_diffusers(self, x0, t):
+        noise = torch.randn_like(x0, device=x0.device)
+        xt = self.noise_scheduler.add_noise(x0, noise, t)
+        return xt, noise
 
     def forward(self, batch):
         x0 = batch
         bs = len(x0)
         t = torch.randint(0, self.cfg.opt.n_diffusion_steps, (bs,), dtype=torch.long, device=x0.device)
-        xt, noise = self.q_x0_xt(x0, t)
-        noise_pred = self.encoder(xt, t)
+        xt, noise = self.q_x0_xt_diffusers(x0, t)
+        noise_pred = self.encoder(xt, t)["sample"]
 
         loss = torch.nn.functional.mse_loss(noise_pred, noise)
 
@@ -94,14 +117,8 @@ class BaseDiffusion(pl.LightningModule):
             self._log_samples()
 
     def _log_samples(self):
-        samples = ddpm(
-            self.encoder,
-            im_size=self.cfg.data.image_size,
-            n_samples=self.cfg.opt.n_samples_to_log,
-            n_diffusion_steps=self.cfg.opt.n_diffusion_steps,
-            noise_range=self.cfg.opt.noise_range,
-            use_gpu=self.cfg.opt.gpus != 0,
-        )
+        pipeline = DDPMPipeline(unet=self.encoder, scheduler=self.noise_scheduler)
+        samples = pipeline(batch_size=self.cfg.opt.n_samples_to_log, generator=torch.manual_seed(57)).images
 
         image = Image.new("RGB", size=(self.cfg.data.image_size * 4, self.cfg.data.image_size * 4))
         for i, sample in enumerate(samples):
@@ -111,17 +128,17 @@ class BaseDiffusion(pl.LightningModule):
         self.logger.log_image(key="samples", images=[image])
 
     def configure_optimizers(self):
-        print(f"Training steps: {self.num_training_steps}")
+        logger.info(f"Training steps: {self.num_training_steps}")
         optimizer = torch.optim.AdamW(self.encoder.parameters(), lr=self.lr, weight_decay=self.w_decay)
-        if isinstance(self.warmup_steps, float):
-            warmup_steps = self.num_training_steps * self.warmup_steps
+        if isinstance(self.warmup_epochs, float):
+            warmup_steps = self.warmup_epochs * self.num_training_steps
         else:
-            warmup_steps = self.warmup_steps
+            warmup_steps = self.warmup_epochs * self.num_training_steps // self.cfg.opt.n_epochs
 
         if self.scheduler == "cosine":
             scheduler = get_cosine_schedule_with_warmup(
                 optimizer,
-                num_warmup_steps=warmup_steps,
+                num_warmup_steps=int(warmup_steps),
                 num_training_steps=self.num_training_steps,
             )
             scheduler = {"scheduler": scheduler, "interval": "step", "frequency": 1}
