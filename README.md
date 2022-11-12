@@ -29,7 +29,7 @@ Horizontal flip:
 
 ![manually written code](./data/results/ddpm/500_epochs_flip.png)
 
-Horizontal flip:
+No horizontal flip:
 
 ![manually written code](./data/results/ddpm/500_epochs_no_flip.png)
 
